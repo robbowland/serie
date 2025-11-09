@@ -290,6 +290,16 @@
           "description": "Background color for a selected item in lists.",
           "default": "dark-gray"
         },
+        "list_selected_bold": {
+          "type": "boolean",
+          "description": "Render selected list rows in bold.",
+          "default": false
+        },
+        "list_selected_italic": {
+          "type": "boolean",
+          "description": "Render selected list rows in italics.",
+          "default": false
+        },
         "list_ref_paren_fg": {
           "type": "string",
           "description": "Color for parentheses surrounding refs in the commit list.",
@@ -399,6 +409,16 @@
           "type": "string",
           "description": "Background color for a selected item in the refs list.",
           "default": "dark-gray"
+        },
+        "ref_selected_bold": {
+          "type": "boolean",
+          "description": "Render selected items in the refs list in bold.",
+          "default": false
+        },
+        "ref_selected_italic": {
+          "type": "boolean",
+          "description": "Render selected items in the refs list in italics.",
+          "default": false
         },
         "help_block_title_fg": {
           "type": "string",

@@ -17,6 +17,10 @@ pub struct ColorTheme {
     pub list_selected_fg: RatatuiColor,
     #[default(RatatuiColor::DarkGray)]
     pub list_selected_bg: RatatuiColor,
+    #[default(false)]
+    pub list_selected_bold: bool,
+    #[default(false)]
+    pub list_selected_italic: bool,
     #[default(RatatuiColor::Yellow)]
     pub list_ref_paren_fg: RatatuiColor,
     #[default(RatatuiColor::Green)]
@@ -63,6 +67,10 @@ pub struct ColorTheme {
     pub ref_selected_fg: RatatuiColor,
     #[default(RatatuiColor::DarkGray)]
     pub ref_selected_bg: RatatuiColor,
+    #[default(false)]
+    pub ref_selected_bold: bool,
+    #[default(false)]
+    pub ref_selected_italic: bool,
 
     #[default(RatatuiColor::Green)]
     pub help_block_title_fg: RatatuiColor,

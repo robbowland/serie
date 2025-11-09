@@ -1,7 +1,7 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
-    style::{Style, Stylize},
+    style::{Color, Modifier, Style, Stylize},
     widgets::{Block, Borders, Padding, StatefulWidget},
 };
 use semver::Version;
@@ -99,16 +99,26 @@ impl StatefulWidget for RefList<'_> {
     type State = RefListState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+        let mut highlight_style = Style::default();
+        if self.color_theme.ref_selected_bg != Color::Reset {
+            highlight_style = highlight_style.bg(self.color_theme.ref_selected_bg);
+        }
+        if self.color_theme.ref_selected_fg != Color::Reset {
+            highlight_style = highlight_style.fg(self.color_theme.ref_selected_fg);
+        }
+        if self.color_theme.ref_selected_bold {
+            highlight_style = highlight_style.add_modifier(Modifier::BOLD);
+        }
+        if self.color_theme.ref_selected_italic {
+            highlight_style = highlight_style.add_modifier(Modifier::ITALIC);
+        }
+
         let tree = Tree::new(&self.items)
             .unwrap()
             .node_closed_symbol("\u{25b8} ") // ▸
             .node_open_symbol("\u{25be} ") // ▾
             .node_no_children_symbol("  ")
-            .highlight_style(
-                Style::default()
-                    .bg(self.color_theme.ref_selected_bg)
-                    .fg(self.color_theme.ref_selected_fg),
-            )
+            .highlight_style(highlight_style)
             .block(
                 Block::default()
                     .borders(Borders::LEFT)

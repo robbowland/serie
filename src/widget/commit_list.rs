@@ -878,9 +878,18 @@ impl CommitList<'_> {
         spans.push(Span::raw(" "));
         let mut line = Line::from(spans);
         if i == state.selected {
-            line = line
-                .bg(self.color_theme.list_selected_bg)
-                .fg(self.color_theme.list_selected_fg);
+            if self.color_theme.list_selected_bg != Color::Reset {
+                line = line.bg(self.color_theme.list_selected_bg);
+            }
+            if self.color_theme.list_selected_fg != Color::Reset {
+                line = line.fg(self.color_theme.list_selected_fg);
+            }
+            if self.color_theme.list_selected_bold {
+                line = line.add_modifier(Modifier::BOLD);
+            }
+            if self.color_theme.list_selected_italic {
+                line = line.add_modifier(Modifier::ITALIC);
+            }
         }
         ListItem::new(line)
     }
