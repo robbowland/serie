@@ -654,15 +654,15 @@ impl<'a> StatefulWidget for CommitList<'a> {
         let chunks = Layout::horizontal([
             Constraint::Length(hash_cell_width),
             Constraint::Length(date_cell_width),
-            Constraint::Min(0), // subject
             Constraint::Length(name_cell_width),
+            Constraint::Min(0), // subject
         ])
         .split(area);
 
         self.render_hash(buf, chunks[0], state);
         self.render_date(buf, chunks[1], state);
-        self.render_subject(buf, chunks[2], state);
-        self.render_name(buf, chunks[3], state);
+        self.render_name(buf, chunks[2], state);
+        self.render_subject(buf, chunks[3], state);
     }
 }
 
