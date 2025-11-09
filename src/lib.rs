@@ -94,7 +94,7 @@ pub fn run() -> Result<()> {
     let _graph_width = args.graph_width.or(core_config.option.graph_width);
     let _preload = args.preload;
 
-    let repository = git::Repository::load(Path::new("."), order)?;
+    let repository = git::Repository::load(Path::new("."), order, &core_config.option.hidden_refs)?;
 
     let graph = graph::calc_graph(&repository);
 

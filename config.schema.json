@@ -40,6 +40,14 @@
                 "single"
               ],
               "default": "auto"
+            },
+            "hidden_refs": {
+              "type": "array",
+              "description": "Glob patterns of refs that should be hidden (e.g. \"origin/bugs/*\").",
+              "items": {
+                "type": "string"
+              },
+              "default": []
             }
           },
           "additionalProperties": false

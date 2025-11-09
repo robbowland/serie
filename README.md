@@ -277,6 +277,9 @@ order = "chrono"
 # The value specified in the command line argument takes precedence.
 # type: enum (possible values: "auto", "double", "single")
 graph_width = "auto"
+# A list of glob patterns for refs that should be hidden (e.g. "origin/bugs/*").
+# type: [string]
+hidden_refs = []
 
 [core.search]
 # Whether to enable ignore case by default.
@@ -418,6 +421,8 @@ divider_fg = "dark-gray"
 # See ./assets/default-keybind.toml for a specific example configuration.
 # ...
 ```
+
+Use the `hidden_refs` glob patterns to omit noisy refs (for example, `hidden_refs = ["origin/bugs/*"]` hides the `git bug` branches).
 
 </details>
 

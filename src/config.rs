@@ -109,6 +109,8 @@ pub struct CoreOptionConfig {
     pub protocol: Option<ImageProtocolType>,
     pub order: Option<CommitOrderType>,
     pub graph_width: Option<GraphWidthType>,
+    #[default(Vec::new())]
+    pub hidden_refs: Vec<String>,
 }
 
 #[optional(derives = [Deserialize])]
@@ -313,6 +315,7 @@ mod tests {
                     protocol: None,
                     order: None,
                     graph_width: None,
+                    hidden_refs: Vec::new(),
                 },
                 search: CoreSearchConfig {
                     ignore_case: false,
@@ -418,6 +421,7 @@ mod tests {
                     protocol: Some(ImageProtocolType::Kitty),
                     order: Some(CommitOrderType::Topo),
                     graph_width: Some(GraphWidthType::Single),
+                    hidden_refs: Vec::new(),
                 },
                 search: CoreSearchConfig {
                     ignore_case: true,
@@ -500,6 +504,7 @@ mod tests {
                     protocol: None,
                     order: None,
                     graph_width: None,
+                    hidden_refs: Vec::new(),
                 },
                 search: CoreSearchConfig {
                     ignore_case: false,

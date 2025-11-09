@@ -7,6 +7,7 @@ use std::{
 };
 
 use chrono::{DateTime, FixedOffset};
+use globset::{Glob, GlobSet, GlobSetBuilder};
 
 use crate::Result;
 
@@ -124,7 +125,7 @@ pub struct Repository {
 }
 
 impl Repository {
-    pub fn load(path: &Path, sort: SortCommit) -> Result<Self> {
+    pub fn load(path: &Path, sort: SortCommit, hidden_ref_patterns: &[String]) -> Result<Self> {
         check_git_repository(path)?;
 
         let stashes = load_all_stashes(path);
@@ -139,6 +140,10 @@ impl Repository {
         let (mut ref_map, head) = load_refs(path);
         let stash_ref_map = load_stashes_as_refs(path);
         merge_ref_maps(&mut ref_map, stash_ref_map);
+        let hidden_ref_matcher = build_hidden_ref_matcher(hidden_ref_patterns)?;
+        if let Some(matcher) = hidden_ref_matcher.as_ref() {
+            filter_hidden_refs(&mut ref_map, matcher);
+        }
 
         Ok(Self::new(
             path.to_path_buf(),
@@ -518,6 +523,57 @@ fn load_stashes_as_refs(path: &Path) -> RefMap {
 fn merge_ref_maps(m1: &mut RefMap, m2: RefMap) {
     for (k, v) in m2 {
         m1.entry(k).or_default().extend(v);
+    }
+}
+
+fn build_hidden_ref_matcher(patterns: &[String]) -> Result<Option<GlobSet>> {
+    if patterns.is_empty() {
+        return Ok(None);
+    }
+    let mut builder = GlobSetBuilder::new();
+    for pattern in patterns {
+        builder.add(Glob::new(pattern)?);
+    }
+    Ok(Some(builder.build()?))
+}
+
+fn filter_hidden_refs(ref_map: &mut RefMap, matcher: &GlobSet) {
+    ref_map.retain(|_, refs| {
+        refs.retain(|r| !matcher.is_match(r.name()));
+        !refs.is_empty()
+    });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hidden_ref_patterns_filter_matching_refs() {
+        let mut ref_map = RefMap::new();
+        let commit: CommitHash = "abc1234".into();
+        ref_map.insert(
+            commit.clone(),
+            vec![
+                Ref::RemoteBranch {
+                    name: "origin/bugs/foo".into(),
+                    target: commit.clone(),
+                },
+                Ref::RemoteBranch {
+                    name: "origin/features/bar".into(),
+                    target: commit.clone(),
+                },
+            ],
+        );
+
+        let matcher = build_hidden_ref_matcher(&["origin/bugs/*".into()])
+            .unwrap()
+            .unwrap();
+        filter_hidden_refs(&mut ref_map, &matcher);
+
+        let remaining = ref_map.get(&commit).unwrap();
+        assert_eq!(remaining.len(), 1);
+        assert_eq!(remaining[0].name(), "origin/features/bar");
     }
 }
 
