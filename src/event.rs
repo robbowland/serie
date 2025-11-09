@@ -121,6 +121,7 @@ pub enum UserEvent {
     FuzzyToggle,
     ShortCopy,
     FullCopy,
+    AuthorToggle,
     Unknown,
 }
 
@@ -181,6 +182,7 @@ impl<'de> Deserialize<'de> for UserEvent {
                         "fuzzy_toggle" => Ok(UserEvent::FuzzyToggle),
                         "short_copy" => Ok(UserEvent::ShortCopy),
                         "full_copy" => Ok(UserEvent::FullCopy),
+                        "author_toggle" => Ok(UserEvent::AuthorToggle),
                         _ => {
                             let msg = format!("Unknown user event: {}", value);
                             Err(de::Error::custom(msg))

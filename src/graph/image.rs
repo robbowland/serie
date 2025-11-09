@@ -225,15 +225,14 @@ pub fn build_graph_image(
     let images = graph_row_sources
         .into_par_iter()
         .map(|(pos_x, edges)| {
-            let graph_row_image =
-                calc_graph_row_image(
-                    pos_x,
-                    cell_count,
-                    edges,
-                    image_params,
-                    drawing_pixels,
-                    reverse_vertical,
-                );
+            let graph_row_image = calc_graph_row_image(
+                pos_x,
+                cell_count,
+                edges,
+                image_params,
+                drawing_pixels,
+                reverse_vertical,
+            );
             (edges.clone(), graph_row_image)
         })
         .collect();

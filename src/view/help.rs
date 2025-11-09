@@ -266,6 +266,7 @@ fn build_lines(
         (vec![UserEvent::SelectBottom], "Select bottom of the screen".into()),
         (vec![UserEvent::Confirm], "Show commit details".into()),
         (vec![UserEvent::RefListToggle], "Open refs list".into()),
+        (vec![UserEvent::AuthorToggle], "Toggle author column".into()),
         (vec![UserEvent::Search], "Start search".into()),
         (vec![UserEvent::Cancel], "Cancel search".into()),
         (vec![UserEvent::GoToNext], "Go to next search match".into()),

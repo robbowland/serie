@@ -189,6 +189,7 @@ The default key bindings can be overridden. Please refer to [default-keybind.tom
 | <kbd>H/M/L</kbd>                     | Select top/middle/bottom of the screen             | `select_top` `select_middle` `select_bottom` |
 | <kbd>Enter</kbd>                     | Show commit details<br>Apply search (if searching) | `confirm`                                    |
 | <kbd>Tab</kbd>                       | Open refs list                                     | `ref_list_toggle`                            |
+| <kbd>a</kbd>                         | Toggle author column                               | `author_toggle`                              |
 | <kbd>/</kbd>                         | Start search                                       | `search`                                     |
 | <kbd>Esc</kbd>                       | Cancel search                                      | `cancel`                                     |
 | <kbd>n/N</kbd>                       | Go to next/previous search match                   | `go_to_next` `go_to_previous`                |
@@ -196,6 +197,8 @@ The default key bindings can be overridden. Please refer to [default-keybind.tom
 | <kbd>Ctrl-x</kbd>                    | Toggle fuzzy match (if searching)                  | `fuzzy_toggle`                               |
 | <kbd>c/C</kbd>                       | Copy commit short/full hash                        | `short_copy` `full_copy`                     |
 | <kbd>d</kbd>                         | Toggle custom user command view                    | `user_command_view_toggle_1`                 |
+
+The author column starts hidden to maximize room for commit subjects; press <kbd>a</kbd> to reveal it when needed.
 
 #### Commit Detail
 

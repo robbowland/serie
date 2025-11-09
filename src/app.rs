@@ -6,7 +6,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Modifier, Style, Stylize},
     text::Line,
-    widgets::{Block, Borders, Padding, Paragraph},
+    widgets::{Block, Padding, Paragraph},
     Frame, Terminal,
 };
 
@@ -257,10 +257,9 @@ impl App<'_> {
         f.render_widget(base, f.area());
 
         let [view_area, status_line_area] =
-            Layout::vertical([Constraint::Min(0), Constraint::Length(2)]).areas(f.area());
+            Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).areas(f.area());
 
         self.update_state(view_area);
-
         self.view.render(f, view_area);
         self.render_status_line(f, status_line_area);
     }
@@ -306,14 +305,13 @@ impl App<'_> {
         };
         let paragraph = Paragraph::new(text).block(
             Block::default()
-                .borders(Borders::TOP)
                 .style(Style::default().fg(self.color_theme.divider_fg))
                 .padding(Padding::horizontal(1)),
         );
         f.render_widget(paragraph, area);
 
         if let StatusLine::Input(_, Some(cursor_pos), _) = &self.status_line {
-            let (x, y) = (area.x + cursor_pos + 1, area.y + 1);
+            let (x, y) = (area.x + cursor_pos + 1, area.y);
             match &self.ui_config.common.cursor_type {
                 CursorType::Native => {
                     f.set_cursor_position((x, y));

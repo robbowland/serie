@@ -29,6 +29,7 @@ ref_list_toggle = ["tab"]
 search = ["/"]
 ignore_case_toggle = ["ctrl-g"]
 fuzzy_toggle = ["ctrl-x"]
+author_toggle = ["a"]
 
 user_command_view_toggle_1 = ["d"]
 

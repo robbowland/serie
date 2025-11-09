@@ -121,7 +121,7 @@ impl<'a> DetailView<'a> {
 
     pub fn render(&mut self, f: &mut Frame, area: Rect) {
         // Prefer giving the diff view ~2/3 of the available height while honoring the configured minimum.
-        let available_height = area.height.saturating_sub(1);
+        let available_height = area.height;
         let preferred_height = available_height.saturating_mul(2) / 3;
         let target_height = preferred_height.max(self.ui_config.detail.height);
         let detail_height = available_height.min(target_height).max(1);

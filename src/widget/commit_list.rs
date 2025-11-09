@@ -198,6 +198,7 @@ pub struct CommitListState<'a> {
 
     default_ignore_case: bool,
     default_fuzzy: bool,
+    show_author_column: bool,
 }
 
 impl<'a> CommitListState<'a> {
@@ -226,11 +227,20 @@ impl<'a> CommitListState<'a> {
             height: 0,
             default_ignore_case,
             default_fuzzy,
+            show_author_column: false,
         }
     }
 
     pub fn graph_area_cell_width(&self) -> u16 {
         self.graph_cell_width + 1 // right pad
+    }
+
+    pub fn toggle_author_column(&mut self) {
+        self.show_author_column = !self.show_author_column;
+    }
+
+    pub fn author_column_visible(&self) -> bool {
+        self.show_author_column
     }
 
     pub fn select_next(&mut self) {
@@ -725,7 +735,11 @@ impl CommitList<'_> {
         let pad = 2;
         let graph_cell_width = state.graph_area_cell_width();
         let marker_cell_width = 1;
-        let mut name_cell_width = name_width + pad;
+        let mut name_cell_width = if state.author_column_visible() {
+            name_width + pad
+        } else {
+            0
+        };
         let mut hash_cell_width = 7 + pad;
         let mut date_cell_width = date_width + pad;
 
@@ -826,6 +840,9 @@ impl CommitList<'_> {
     }
 
     fn render_name(&self, buf: &mut Buffer, area: Rect, state: &CommitListState) {
+        if !state.author_column_visible() {
+            return;
+        }
         let max_width = (area.width as usize).saturating_sub(2);
         if area.is_empty() || max_width == 0 {
             return;

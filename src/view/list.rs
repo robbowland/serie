@@ -52,6 +52,9 @@ impl<'a> ListView<'a> {
                     self.as_mut_list_state().toggle_fuzzy();
                     self.update_search_query();
                 }
+                UserEvent::AuthorToggle => {
+                    self.as_mut_list_state().toggle_author_column();
+                }
                 _ => {
                     self.as_mut_list_state().handle_search_input(key);
                     self.update_search_query();
@@ -148,6 +151,9 @@ impl<'a> ListView<'a> {
                 }
                 UserEvent::RefListToggle => {
                     self.tx.send(AppEvent::OpenRefs);
+                }
+                UserEvent::AuthorToggle => {
+                    self.as_mut_list_state().toggle_author_column();
                 }
                 _ => {}
             }

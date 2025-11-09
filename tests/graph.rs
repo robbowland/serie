@@ -1131,8 +1131,12 @@ fn generate_and_output_graph_image<P: AsRef<Path>>(path: P, option: &GenerateGra
     let graph = graph::calc_graph(&repository);
     let image_params = graph::ImageParams::new(&graph_color_set, cell_width_type);
     let drawing_pixels = graph::DrawingPixels::new(&image_params);
-    let graph_image =
-        graph::build_graph_image(&graph, &image_params, &drawing_pixels, /*reverse_vertical=*/ false);
+    let graph_image = graph::build_graph_image(
+        &graph,
+        &image_params,
+        &drawing_pixels,
+        /*reverse_vertical=*/ false,
+    );
 
     // Create concatenated image
     let (width, height) = (50, 50);
