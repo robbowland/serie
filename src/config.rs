@@ -566,4 +566,20 @@ mod tests {
         };
         assert_eq!(actual, expected);
     }
+
+    #[test]
+    fn test_config_hidden_refs() {
+        let toml = r#"
+            [core.option]
+            hidden_refs = ["origin/bugs/*", "refs/pull/*"]
+        "#;
+        let actual: Config = toml::from_str::<OptionalConfig>(toml).unwrap().into();
+        assert_eq!(
+            actual.core.option.hidden_refs,
+            vec![
+                String::from("origin/bugs/*"),
+                String::from("refs/pull/*")
+            ]
+        );
+    }
 }

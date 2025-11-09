@@ -129,7 +129,7 @@ impl Repository {
         check_git_repository(path)?;
 
         let stashes = load_all_stashes(path);
-        let commits = load_all_commits(path, sort, &stashes);
+        let commits = load_all_commits(path, sort, &stashes, hidden_ref_patterns);
 
         let commits = merge_stashes_to_commits(commits, stashes);
         let commit_hashes = commits.iter().map(|c| c.commit_hash.clone()).collect();
@@ -241,7 +241,12 @@ fn check_git_repository(path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn load_all_commits(path: &Path, sort: SortCommit, stashes: &[Commit]) -> Vec<Commit> {
+fn load_all_commits(
+    path: &Path,
+    sort: SortCommit,
+    stashes: &[Commit],
+    hidden_ref_patterns: &[String],
+) -> Vec<Commit> {
     let mut cmd = Command::new("git");
     cmd.arg("log");
 
@@ -254,7 +259,12 @@ fn load_all_commits(path: &Path, sort: SortCommit, stashes: &[Commit]) -> Vec<Co
     .arg("-z"); // use NUL as a delimiter
 
     // exclude stashes and other refs
-    cmd.arg("--branches").arg("--remotes").arg("--tags");
+    add_hidden_ref_excludes(&mut cmd, hidden_ref_patterns);
+    cmd.arg("--branches");
+    add_hidden_ref_excludes(&mut cmd, hidden_ref_patterns);
+    cmd.arg("--remotes");
+    add_hidden_ref_excludes(&mut cmd, hidden_ref_patterns);
+    cmd.arg("--tags");
 
     // commits that are reachable from the stashes
     stashes.iter().for_each(|stash| {
@@ -301,6 +311,18 @@ fn load_all_commits(path: &Path, sort: SortCommit, stashes: &[Commit]) -> Vec<Co
     process.wait().unwrap();
 
     commits
+}
+
+fn add_hidden_ref_excludes(cmd: &mut Command, hidden_ref_patterns: &[String]) {
+    if hidden_ref_patterns.is_empty() {
+        return;
+    }
+    for pattern in hidden_ref_patterns {
+        if pattern.is_empty() {
+            continue;
+        }
+        cmd.arg(format!("--exclude={pattern}"));
+    }
 }
 
 fn load_all_stashes(path: &Path) -> Vec<Commit> {
@@ -547,6 +569,8 @@ fn filter_hidden_refs(ref_map: &mut RefMap, matcher: &GlobSet) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::Path;
+    use tempfile::tempdir;
 
     #[test]
     fn hidden_ref_patterns_filter_matching_refs() {
@@ -574,6 +598,96 @@ mod tests {
         let remaining = ref_map.get(&commit).unwrap();
         assert_eq!(remaining.len(), 1);
         assert_eq!(remaining[0].name(), "origin/features/bar");
+    }
+
+    #[test]
+    fn repository_load_excludes_commits_from_hidden_remote_refs() {
+        let dir = tempdir().unwrap();
+        let repo_path = dir.path();
+
+        init_git_repo(repo_path);
+        create_base_commit(repo_path);
+        let _ = create_hidden_remote_branch(repo_path, "origin/bugs/123");
+
+        let repository =
+            Repository::load(repo_path, SortCommit::Chronological, &[]).unwrap();
+        assert!(
+            has_subject(&repository, "bug commit"),
+            "expected bug commit to be present without hidden refs"
+        );
+
+        let repository_hidden = Repository::load(
+            repo_path,
+            SortCommit::Chronological,
+            &[String::from("origin/bugs/*")],
+        )
+        .unwrap();
+        assert!(
+            !has_subject(&repository_hidden, "bug commit"),
+            "bug commit should be hidden when matching pattern is provided"
+        );
+    }
+
+    fn init_git_repo(path: &Path) {
+        run_git(path, &["init", "-b", "master"]);
+        run_git(path, &["config", "user.name", "Serie Test"]);
+        run_git(path, &["config", "user.email", "serie@example.com"]);
+    }
+
+    fn create_base_commit(path: &Path) {
+        std::fs::write(path.join("base.txt"), "base").unwrap();
+        run_git(path, &["add", "base.txt"]);
+        run_git(path, &["commit", "-m", "base"]);
+    }
+
+    fn create_hidden_remote_branch(path: &Path, remote_ref: &str) -> String {
+        run_git(path, &["checkout", "-b", "bug/work"]);
+        std::fs::write(path.join("bug.txt"), "bug").unwrap();
+        run_git(path, &["add", "bug.txt"]);
+        run_git(path, &["commit", "-m", "bug commit"]);
+        let bug_hash = run_git_output(path, &["rev-parse", "HEAD"]);
+        run_git(path, &["checkout", "master"]);
+        run_git(path, &["branch", "-D", "bug/work"]);
+        let full_ref = format!("refs/remotes/{remote_ref}");
+        run_git(path, &["update-ref", &full_ref, &bug_hash]);
+        bug_hash
+    }
+
+    fn has_subject(repository: &Repository, subject: &str) -> bool {
+        subjects(repository)
+            .iter()
+            .any(|commit_subject| commit_subject == subject)
+    }
+
+    fn subjects(repository: &Repository) -> Vec<String> {
+        repository
+            .all_commits()
+            .iter()
+            .map(|commit| commit.subject.clone())
+            .collect()
+    }
+
+    fn run_git(path: &Path, args: &[&str]) {
+        let status = Command::new("git")
+            .args(args)
+            .current_dir(path)
+            .status()
+            .unwrap_or_else(|_| panic!("failed to run git {}", args.join(" ")));
+        assert!(status.success(), "git {} failed", args.join(" "));
+    }
+
+    fn run_git_output(path: &Path, args: &[&str]) -> String {
+        let output = Command::new("git")
+            .args(args)
+            .current_dir(path)
+            .output()
+            .unwrap_or_else(|_| panic!("failed to run git {}", args.join(" ")));
+        assert!(
+            output.status.success(),
+            "git {} failed",
+            args.join(" ")
+        );
+        String::from_utf8(output.stdout).unwrap().trim().to_string()
     }
 }
 
