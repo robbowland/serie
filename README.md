@@ -198,7 +198,7 @@ The default key bindings can be overridden. Please refer to [default-keybind.tom
 | <kbd>c/C</kbd>                       | Copy commit short/full hash                        | `short_copy` `full_copy`                     |
 | <kbd>d</kbd>                         | Toggle custom user command view                    | `user_command_view_toggle_1`                 |
 
-The author column starts hidden to maximize room for commit subjects; press <kbd>a</kbd> to reveal it when needed.
+The author column starts hidden to maximize room for commit subjects; tap <kbd>a</kbd> to reveal it when needed.
 
 #### Commit Detail
 

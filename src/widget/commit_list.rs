@@ -17,7 +17,6 @@ use crate::{
     color::ColorTheme,
     config::UiListConfig,
     git::{Commit, CommitHash, Head, Ref},
-    graph::GraphImageManager,
 };
 
 static FUZZY_MATCHER: Lazy<SkimMatcherV2> = Lazy::new(|| SkimMatcherV2::default().respect_case());
@@ -28,16 +27,11 @@ const ELLIPSIS: &str = "...";
 pub struct CommitInfo<'a> {
     commit: &'a Commit,
     refs: Vec<&'a Ref>,
-    graph_color: Color,
 }
 
 impl<'a> CommitInfo<'a> {
-    pub fn new(commit: &'a Commit, refs: Vec<&'a Ref>, graph_color: Color) -> Self {
-        Self {
-            commit,
-            refs,
-            graph_color,
-        }
+    pub fn new(commit: &'a Commit, refs: Vec<&'a Ref>) -> Self {
+        Self { commit, refs }
     }
 }
 
@@ -181,8 +175,6 @@ impl SearchMatcher {
 #[derive(Debug)]
 pub struct CommitListState<'a> {
     commits: Vec<CommitInfo<'a>>,
-    graph_image_manager: GraphImageManager<'a>,
-    graph_cell_width: u16,
     head: &'a Head,
 
     ref_name_to_commit_index_map: HashMap<&'a str, usize>,
@@ -204,8 +196,6 @@ pub struct CommitListState<'a> {
 impl<'a> CommitListState<'a> {
     pub fn new(
         commits: Vec<CommitInfo<'a>>,
-        graph_image_manager: GraphImageManager<'a>,
-        graph_cell_width: u16,
         head: &'a Head,
         ref_name_to_commit_index_map: HashMap<&'a str, usize>,
         default_ignore_case: bool,
@@ -214,8 +204,6 @@ impl<'a> CommitListState<'a> {
         let total = commits.len();
         CommitListState {
             commits,
-            graph_image_manager,
-            graph_cell_width,
             head,
             ref_name_to_commit_index_map,
             search_state: SearchState::Inactive,
@@ -229,10 +217,6 @@ impl<'a> CommitListState<'a> {
             default_fuzzy,
             show_author_column: false,
         }
-    }
-
-    pub fn graph_area_cell_width(&self) -> u16 {
-        self.graph_cell_width + 1 // right pad
     }
 
     pub fn toggle_author_column(&mut self) {
@@ -637,11 +621,6 @@ impl<'a> CommitListState<'a> {
             }
         }
     }
-
-    fn encoded_image(&self, commit_info: &'a CommitInfo) -> &str {
-        self.graph_image_manager
-            .encoded_image(&commit_info.commit.commit_hash)
-    }
 }
 
 pub struct CommitList<'a> {
@@ -664,13 +643,7 @@ impl<'a> StatefulWidget for CommitList<'a> {
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         self.update_state(area, state);
 
-        let (
-            graph_cell_width,
-            marker_cell_width,
-            name_cell_width,
-            hash_cell_width,
-            date_cell_width,
-        ) = self.calc_cell_widths(
+        let (name_cell_width, hash_cell_width, date_cell_width) = self.calc_cell_widths(
             state,
             area.width,
             self.config.subject_min_width,
@@ -679,8 +652,6 @@ impl<'a> StatefulWidget for CommitList<'a> {
         );
 
         let chunks = Layout::horizontal([
-            Constraint::Length(graph_cell_width),
-            Constraint::Length(marker_cell_width),
             Constraint::Min(0), // subject
             Constraint::Length(name_cell_width),
             Constraint::Length(hash_cell_width),
@@ -688,12 +659,10 @@ impl<'a> StatefulWidget for CommitList<'a> {
         ])
         .split(area);
 
-        self.render_graph(buf, chunks[0], state);
-        self.render_marker(buf, chunks[1], state);
-        self.render_subject(buf, chunks[2], state);
-        self.render_name(buf, chunks[3], state);
-        self.render_hash(buf, chunks[4], state);
-        self.render_date(buf, chunks[5], state);
+        self.render_subject(buf, chunks[0], state);
+        self.render_name(buf, chunks[1], state);
+        self.render_hash(buf, chunks[2], state);
+        self.render_date(buf, chunks[3], state);
     }
 }
 
@@ -711,17 +680,6 @@ impl CommitList<'_> {
             state.selected -= diff;
             state.offset += diff;
         }
-
-        state
-            .commits
-            .iter()
-            .skip(state.offset)
-            .take(state.height)
-            .for_each(|commit_info| {
-                state
-                    .graph_image_manager
-                    .load_encoded_image(&commit_info.commit.commit_hash);
-            });
     }
 
     fn calc_cell_widths(
@@ -731,10 +689,8 @@ impl CommitList<'_> {
         subject_min_width: u16,
         name_width: u16,
         date_width: u16,
-    ) -> (u16, u16, u16, u16, u16) {
+    ) -> (u16, u16, u16) {
         let pad = 2;
-        let graph_cell_width = state.graph_area_cell_width();
-        let marker_cell_width = 1;
         let mut name_cell_width = if state.author_column_visible() {
             name_width + pad
         } else {
@@ -743,12 +699,8 @@ impl CommitList<'_> {
         let mut hash_cell_width = 7 + pad;
         let mut date_cell_width = date_width + pad;
 
-        let mut total_width = graph_cell_width
-            + marker_cell_width
-            + hash_cell_width
-            + name_cell_width
-            + date_cell_width
-            + subject_min_width;
+        let mut total_width =
+            hash_cell_width + name_cell_width + date_cell_width + subject_min_width;
 
         if total_width > width {
             total_width = total_width.saturating_sub(name_cell_width);
@@ -762,34 +714,7 @@ impl CommitList<'_> {
             hash_cell_width = 0;
         }
 
-        (
-            graph_cell_width,
-            marker_cell_width,
-            name_cell_width,
-            hash_cell_width,
-            date_cell_width,
-        )
-    }
-
-    fn render_graph(&self, buf: &mut Buffer, area: Rect, state: &CommitListState) {
-        self.rendering_commit_info_iter(state)
-            .for_each(|(i, commit_info)| {
-                buf[(area.left(), area.top() + i as u16)]
-                    .set_symbol(state.encoded_image(commit_info));
-
-                // width - 1 for right pad
-                for w in 1..area.width - 1 {
-                    buf[(area.left() + w, area.top() + i as u16)].set_skip(true);
-                }
-            });
-    }
-
-    fn render_marker(&self, buf: &mut Buffer, area: Rect, state: &CommitListState) {
-        let items: Vec<ListItem> = self
-            .rendering_commit_info_iter(state)
-            .map(|(_, commit_info)| ListItem::new("│".fg(commit_info.graph_color)))
-            .collect();
-        Widget::render(List::new(items), area, buf)
+        (name_cell_width, hash_cell_width, date_cell_width)
     }
 
     fn render_subject(&self, buf: &mut Buffer, area: Rect, state: &CommitListState) {

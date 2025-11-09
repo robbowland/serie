@@ -5,7 +5,6 @@ pub mod graph;
 pub mod protocol;
 
 mod app;
-mod check;
 mod event;
 mod external;
 mod keybind;
@@ -16,7 +15,6 @@ use std::path::Path;
 
 use app::App;
 use clap::{Parser, ValueEnum};
-use graph::GraphImageManager;
 use serde::Deserialize;
 
 /// Serie - A rich git commit graph in your terminal, like magic 📚
@@ -88,29 +86,17 @@ pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 pub fn run() -> Result<()> {
     let args = Args::parse();
-    let (core_config, ui_config, graph_config, color_theme, key_bind_patch) = config::load()?;
+    let (core_config, ui_config, _graph_config, color_theme, key_bind_patch) = config::load()?;
     let key_bind = keybind::KeyBind::new(key_bind_patch);
 
     let image_protocol = args.protocol.or(core_config.option.protocol).into();
     let order = args.order.or(core_config.option.order).into();
-    let graph_width = args.graph_width.or(core_config.option.graph_width);
-
-    let graph_color_set = color::GraphColorSet::new(&graph_config.color);
+    let _graph_width = args.graph_width.or(core_config.option.graph_width);
+    let _preload = args.preload;
 
     let repository = git::Repository::load(Path::new("."), order)?;
 
     let graph = graph::calc_graph(&repository);
-
-    let cell_width_type = check::decide_cell_width_type(&graph, graph_width)?;
-
-    let graph_image_manager = GraphImageManager::new(
-        &graph,
-        &graph_color_set,
-        cell_width_type,
-        image_protocol,
-        args.preload,
-        true,
-    );
 
     let mut terminal = ratatui::init();
 
@@ -118,14 +104,11 @@ pub fn run() -> Result<()> {
 
     let mut app = App::new(
         &repository,
-        graph_image_manager,
         &graph,
         &key_bind,
         &core_config,
         &ui_config,
         &color_theme,
-        &graph_color_set,
-        cell_width_type,
         image_protocol,
         tx,
     );

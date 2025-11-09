@@ -11,12 +11,12 @@ use ratatui::{
 };
 
 use crate::{
-    color::{ColorTheme, GraphColorSet},
+    color::ColorTheme,
     config::{CoreConfig, CursorType, UiConfig},
     event::{AppEvent, Receiver, Sender, UserEvent, UserEventWithCount},
     external::copy_to_clipboard,
     git::Repository,
-    graph::{CellWidthType, Graph, GraphImageManager},
+    graph::Graph,
     keybind::KeyBind,
     protocol::ImageProtocol,
     view::View,
@@ -53,14 +53,11 @@ pub struct App<'a> {
 impl<'a> App<'a> {
     pub fn new(
         repository: &'a Repository,
-        graph_image_manager: GraphImageManager<'a>,
         graph: &'a Graph,
         keybind: &'a KeyBind,
         core_config: &'a CoreConfig,
         ui_config: &'a UiConfig,
         color_theme: &'a ColorTheme,
-        graph_color_set: &'a GraphColorSet,
-        cell_width_type: CellWidthType,
         image_protocol: ImageProtocol,
         tx: Sender,
     ) -> Self {
@@ -74,9 +71,7 @@ impl<'a> App<'a> {
                 for r in &refs {
                     ref_name_to_commit_index_map.insert(r.name(), i);
                 }
-                let (pos_x, _) = graph.commit_pos_map[&commit.commit_hash];
-                let graph_color = graph_color_set.get(pos_x).to_ratatui_color();
-                CommitInfo::new(commit, refs, graph_color)
+                CommitInfo::new(commit, refs)
             })
             .collect();
         let total_commits = commits.len();
@@ -86,15 +81,9 @@ impl<'a> App<'a> {
                 *index = total_commits - 1 - *index;
             }
         }
-        let graph_cell_width = match cell_width_type {
-            CellWidthType::Double => (graph.max_pos_x + 1) as u16 * 2,
-            CellWidthType::Single => (graph.max_pos_x + 1) as u16,
-        };
         let head = repository.head();
         let commit_list_state = CommitListState::new(
             commits,
-            graph_image_manager,
-            graph_cell_width,
             head,
             ref_name_to_commit_index_map,
             core_config.search.ignore_case,
