@@ -3,6 +3,7 @@ use std::{
     io::Cursor,
 };
 
+use image::imageops;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -22,6 +23,7 @@ pub struct GraphImageManager<'a> {
     image_params: ImageParams,
     drawing_pixels: DrawingPixels,
     image_protocol: ImageProtocol,
+    reverse_vertical: bool,
 }
 
 impl<'a> GraphImageManager<'a> {
@@ -31,6 +33,7 @@ impl<'a> GraphImageManager<'a> {
         cell_width_type: CellWidthType,
         image_protocol: ImageProtocol,
         preload: bool,
+        reverse_vertical: bool,
     ) -> Self {
         let image_params = ImageParams::new(graph_color_set, cell_width_type);
         let drawing_pixels = DrawingPixels::new(&image_params);
@@ -42,6 +45,7 @@ impl<'a> GraphImageManager<'a> {
             graph,
             cell_width_type,
             image_protocol,
+            reverse_vertical,
         };
         if preload {
             m.load_all_encoded_image();
@@ -54,7 +58,12 @@ impl<'a> GraphImageManager<'a> {
     }
 
     pub fn load_all_encoded_image(&mut self) {
-        let graph_image = build_graph_image(self.graph, &self.image_params, &self.drawing_pixels);
+        let graph_image = build_graph_image(
+            self.graph,
+            &self.image_params,
+            &self.drawing_pixels,
+            self.reverse_vertical,
+        );
         self.encoded_image_map = self
             .graph
             .commits
@@ -78,6 +87,7 @@ impl<'a> GraphImageManager<'a> {
             &self.image_params,
             &self.drawing_pixels,
             commit_hash,
+            self.reverse_vertical,
         );
         let image = graph_row_image.encode(self.cell_width_type, self.image_protocol);
         self.encoded_image_map.insert(commit_hash.clone(), image);
@@ -177,19 +187,28 @@ fn build_single_graph_row_image(
     image_params: &ImageParams,
     drawing_pixels: &DrawingPixels,
     commit_hash: &CommitHash,
+    reverse_vertical: bool,
 ) -> GraphRowImage {
     let (pos_x, pos_y) = graph.commit_pos_map[&commit_hash];
     let edges = &graph.edges[pos_y];
 
     let cell_count = graph.max_pos_x + 1;
 
-    calc_graph_row_image(pos_x, cell_count, edges, image_params, drawing_pixels)
+    calc_graph_row_image(
+        pos_x,
+        cell_count,
+        edges,
+        image_params,
+        drawing_pixels,
+        reverse_vertical,
+    )
 }
 
 pub fn build_graph_image(
     graph: &Graph<'_>,
     image_params: &ImageParams,
     drawing_pixels: &DrawingPixels,
+    reverse_vertical: bool,
 ) -> GraphImage {
     let graph_row_sources: FxHashSet<(usize, &Vec<Edge>)> = graph
         .commits
@@ -207,7 +226,14 @@ pub fn build_graph_image(
         .into_par_iter()
         .map(|(pos_x, edges)| {
             let graph_row_image =
-                calc_graph_row_image(pos_x, cell_count, edges, image_params, drawing_pixels);
+                calc_graph_row_image(
+                    pos_x,
+                    cell_count,
+                    edges,
+                    image_params,
+                    drawing_pixels,
+                    reverse_vertical,
+                );
             (edges.clone(), graph_row_image)
         })
         .collect();
@@ -568,6 +594,7 @@ fn calc_graph_row_image(
     edges: &[Edge],
     image_params: &ImageParams,
     drawing_pixels: &DrawingPixels,
+    reverse_vertical: bool,
 ) -> GraphRowImage {
     let image_width = (image_params.width as usize * cell_count) as u32;
     let image_height = image_params.height as u32;
@@ -579,6 +606,10 @@ fn calc_graph_row_image(
 
     for edge in edges {
         draw_edge(&mut img_buf, edge, image_params, drawing_pixels)
+    }
+
+    if reverse_vertical {
+        imageops::flip_vertical_in_place(&mut img_buf);
     }
 
     let bytes = build_image(&img_buf, image_width, image_height);
@@ -857,6 +888,7 @@ mod tests {
                     &edges,
                     &image_params,
                     &drawing_pixels,
+                    false,
                 )
             })
             .collect();

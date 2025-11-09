@@ -220,7 +220,7 @@ impl<'a> CommitListState<'a> {
             search_state: SearchState::Inactive,
             search_input: Input::default(),
             search_matches: vec![SearchMatch::default(); total],
-            selected: 0,
+            selected: total.saturating_sub(1),
             offset: 0,
             total,
             height: 0,
@@ -244,7 +244,7 @@ impl<'a> CommitListState<'a> {
     pub fn select_parent(&mut self) {
         if let Some(target_commit) = self.selected_commit_parent_hash().cloned() {
             while target_commit.as_str() != self.selected_commit_hash().as_str() {
-                self.select_next();
+                self.select_prev();
             }
         }
     }

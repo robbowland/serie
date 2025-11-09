@@ -65,7 +65,7 @@ impl<'a> App<'a> {
         tx: Sender,
     ) -> Self {
         let mut ref_name_to_commit_index_map = HashMap::new();
-        let commits = graph
+        let mut commits: Vec<_> = graph
             .commits
             .iter()
             .enumerate()
@@ -79,6 +79,13 @@ impl<'a> App<'a> {
                 CommitInfo::new(commit, refs, graph_color)
             })
             .collect();
+        let total_commits = commits.len();
+        if total_commits > 0 {
+            commits.reverse();
+            for index in ref_name_to_commit_index_map.values_mut() {
+                *index = total_commits - 1 - *index;
+            }
+        }
         let graph_cell_width = match cell_width_type {
             CellWidthType::Double => (graph.max_pos_x + 1) as u16 * 2,
             CellWidthType::Single => (graph.max_pos_x + 1) as u16,

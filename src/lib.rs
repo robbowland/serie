@@ -109,6 +109,7 @@ pub fn run() -> Result<()> {
         cell_width_type,
         image_protocol,
         args.preload,
+        true,
     );
 
     let mut terminal = ratatui::init();
