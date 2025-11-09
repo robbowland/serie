@@ -120,7 +120,11 @@ impl<'a> DetailView<'a> {
     }
 
     pub fn render(&mut self, f: &mut Frame, area: Rect) {
-        let detail_height = (area.height - 1).min(self.ui_config.detail.height);
+        // Prefer giving the diff view ~2/3 of the available height while honoring the configured minimum.
+        let available_height = area.height.saturating_sub(1);
+        let preferred_height = available_height.saturating_mul(2) / 3;
+        let target_height = preferred_height.max(self.ui_config.detail.height);
+        let detail_height = available_height.min(target_height).max(1);
         let [list_area, detail_area] =
             Layout::vertical([Constraint::Min(0), Constraint::Length(detail_height)]).areas(area);
 
